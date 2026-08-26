@@ -6,10 +6,11 @@ def finger_locator (joint, hand_landmarks, width, height):
     mp_hands = mp.solutions.hands
 
 
-    finger = mp_hands.HandLandmark[joint]
-    landmark = hand_landmarks.landmark[finger]
+    marker = mp_hands.HandLandmark[joint]
+    landmark = hand_landmarks.landmark[marker]
    
     x = int(landmark.x *  width)
     y = int(landmark.y *  height)
+    z = landmark.z
     
-    return x, y
+    return x, y, z

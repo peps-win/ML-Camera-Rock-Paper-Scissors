@@ -3,6 +3,7 @@ from finger_location import finger_locator
 import cv2
 import mediapipe as mp # type: ignore
 
+
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_hands = mp.solutions.hands
@@ -12,7 +13,7 @@ camera, height, width = webcam.webcam_init()
 
 with mp_hands.Hands(
         model_complexity=0,
-        min_detection_confidence=0.9,
+        min_detection_confidence=0.75,
         min_tracking_confidence=0.85
     ) as hands:
         
@@ -35,12 +36,13 @@ with mp_hands.Hands(
             if results.multi_hand_landmarks:
                 for hand_landmarks in results.multi_hand_landmarks:
                     
-                    indx_x, indx_y = finger_locator("INDEX_FINGER_TIP", hand_landmarks, width, height)
-                    thumb_x, thumb_y = finger_locator("THUMB_TIP", hand_landmarks, width, height)
-                    # print(f"Index Finger Tip X:{indx_x} Y:{indx_y}")
-                    # print(f"Thumb Finger Tip X:{thumb_x} Y:{thumb_y}")
+                    indx_x, indx_y, indx_z = finger_locator("INDEX_FINGER_TIP", hand_landmarks, width, height)
+                    thumb_x, thumb_y, thumb_z = finger_locator("THUMB_TIP", hand_landmarks, width, height)
+                    wrist_x, wrist_y, wrist_z = finger_locator("WRIST", hand_landmarks, width, height)
                     
-                    if abs(indx_x - thumb_x) < 2:
+                    print(indx_z)
+                    
+                    if abs(indx_x - thumb_x) < 205:
                         if abs(indx_y - thumb_y) < 25:
                             print("Thumb and Index Finger touching")
                     
@@ -52,7 +54,7 @@ with mp_hands.Hands(
                         mp_drawing_styles.get_default_hand_connections_style()
                     )
             
-            # 4. CRITICAL FIX: Display the frame AFTER drawing annotations
+            # Display the frame AFTER drawing annotations
             cv2.imshow("Webcam Feed", frame)
             
             # Checks for a keypress of the 'q' key to quit the loop
