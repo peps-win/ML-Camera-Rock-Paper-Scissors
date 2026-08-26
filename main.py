@@ -1,6 +1,7 @@
-import webcam  # Assumes your custom wrapper works perfectly
+import webcam # Assumes your custom wrapper works perfectly
+from finger_location import finger_locator
 import cv2
-import mediapipe as mp 
+import mediapipe as mp # type: ignore
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -11,8 +12,8 @@ camera, height, width = webcam.webcam_init()
 
 with mp_hands.Hands(
         model_complexity=0,
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5
+        min_detection_confidence=0.9,
+        min_tracking_confidence=0.85
     ) as hands:
         
         while camera.isOpened():
@@ -34,13 +35,14 @@ with mp_hands.Hands(
             if results.multi_hand_landmarks:
                 for hand_landmarks in results.multi_hand_landmarks:
                     
-                    index_finger = mp_hands.HandLandmark.INDEX_FINGER_TIP
-                    landmark = hand_landmarks.landmark[index_finger]
+                    indx_x, indx_y = finger_locator("INDEX_FINGER_TIP", hand_landmarks, width, height)
+                    thumb_x, thumb_y = finger_locator("THUMB_TIP", hand_landmarks, width, height)
+                    # print(f"Index Finger Tip X:{indx_x} Y:{indx_y}")
+                    # print(f"Thumb Finger Tip X:{thumb_x} Y:{thumb_y}")
                     
-                    cx = int(landmark.x *  width)
-                    cy = int(landmark.x * height)
-                    
-                    print(f"Index Finger Tip X:{cx} Y:{cy}")
+                    if abs(indx_x - thumb_x) < 2:
+                        if abs(indx_y - thumb_y) < 25:
+                            print("Thumb and Index Finger touching")
                     
                     mp_drawing.draw_landmarks(
                         frame,  # Draw directly onto frame

@@ -1,4 +1,4 @@
-import mediapipe as mp 
+import mediapipe as mp # type: ignore
 
 def finger_locator (joint, hand_landmarks, width, height):
     mp_drawing = mp.solutions.drawing_utils
@@ -6,7 +6,7 @@ def finger_locator (joint, hand_landmarks, width, height):
     mp_hands = mp.solutions.hands
 
 
-    finger = mp_hands.HandLandmark.joint
+    finger = mp_hands.HandLandmark[joint]
     landmark = hand_landmarks.landmark[finger]
    
     x = int(landmark.x *  width)
