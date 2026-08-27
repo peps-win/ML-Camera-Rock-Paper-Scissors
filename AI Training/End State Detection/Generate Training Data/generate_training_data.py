@@ -7,6 +7,7 @@ from dataclasses import fields
 from shared.models import hand, joint
 from shared.fingerNames import joints
 from shared.finger_location import finger_locator
+import numpy as np
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -29,6 +30,8 @@ def build_header():
 
 header = build_header()
 
+WRIST_INDEX = 0 # index of wrist inside of the joints list
+SCALE_JOINT_INDEX = 8 # index of Middle Finger MCP inside of the joints list
 # Open the CSV once for the whole run, in append-safe write mode
 # More efficent than opening twice
 with open('data.csv', 'w', newline='', encoding='utf-8') as csv_file:
@@ -68,6 +71,20 @@ with open('data.csv', 'w', newline='', encoding='utf-8') as csv_file:
                         for id in joints:
                             x, y, z = finger_locator(id, hand_landmarks, width, height)
                             joint_list.extend([x, y, z])
+
+                        # Make coordinates relative to the wrist
+                        # Normalize the scale to the Middle Finger MCP
+                        coords = np.array(joint_list, dtype=np.float32).reshape(-1, 3)
+
+                        wrist = coords[WRIST_INDEX].copy()
+                        coords -= wrist  # translate so wrist is origin
+
+                        scale = float(np.linalg.norm(coords[SCALE_JOINT_INDEX]))
+                        if scale < 1e-6:
+                            scale = 1e-6  
+                        coords /= scale
+
+                        joint_list = coords.flatten().tolist()
 
                         row = [label, entry.name] + joint_list
                         writer.writerow(row)
