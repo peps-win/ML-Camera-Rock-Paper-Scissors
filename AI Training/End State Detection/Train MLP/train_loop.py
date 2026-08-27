@@ -46,7 +46,7 @@ y_train = torch.tensor(y_train, dtype=torch.long)
 X_test = torch.tensor(X_test, dtype=torch.float32)
 y_test = torch.tensor(y_test, dtype=torch.long)
 
-epochs = 200
+epochs = 1500
 losses = []
 
 for epoch in range(epochs):
@@ -69,6 +69,7 @@ with torch.no_grad():
     predicted = torch.argmax(test_outputs, dim=1)   # pick the highest-scoring class
     accuracy = (predicted == y_test).float().mean()
     print(f"Test Accuracy: {accuracy.item() * 100:.2f}%")
+    torch.save(model.state_dict(), "rps_model.pth")
 
 plt.plot(losses)
 plt.xlabel("Epoch")
