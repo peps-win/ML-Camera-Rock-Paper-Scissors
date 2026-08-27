@@ -1,5 +1,5 @@
 import webcam # Assumes your custom wrapper works perfectly
-from finger_location import finger_locator
+from shared.finger_location import finger_locator
 import cv2
 import mediapipe as mp # type: ignore
 
@@ -32,7 +32,7 @@ with mp_hands.Hands(
             # 2. Allow drawing back on the original frame
             frame.flags.writeable = True
             
-            # Loop for drawing onto hand if a hand that needs landmarks drawn on it is present
+            # Loop for drawing onto hand if a hand that needs landmarks is present
             if results.multi_hand_landmarks:
                 for hand_landmarks in results.multi_hand_landmarks:
                     
