@@ -1,12 +1,12 @@
 import webcam # Assumes your custom wrapper works perfectly
-from shared.finger_location import finger_locator
 import cv2
 import mediapipe as mp # type: ignore
 import torch # type: ignore
-import torch.nn as nn # type: ignore
 import numpy as np
-from shared.fingerNames import joints
-import os
+from shared.Data.fingerNames import joints
+from shared.functions.mediapipe_funcs import draw_annotations
+from shared.functions.RPS_ai_funcs import load_model
+from shared.functions.joint_pos_funcs import extract_joint_coordinates
 
 
 mp_drawing = mp.solutions.drawing_utils
@@ -20,41 +20,20 @@ labels = ["Rock", "Paper", "Scissors"]
 camera, height, width = webcam.webcam_init()
 
 # Define text properties
-org = (10, 25)           # (x, y) coordinates of the bottom-left corner of the text
+org = (10, 30)           # (x, y) coordinates of the bottom-left corner of the text
 fontFace = cv2.FONT_HERSHEY_SIMPLEX
 fontScale = 1.0           # Font size multiplier
 color = (255, 255, 255)       # Text color in BGR (Green)
 thickness = 2             # Line thickness
 lineType = cv2.LINE_AA    # Anti-aliased line for smoother text rendering
 
-# Define the Ai class
-class MLP(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim):
-        super(MLP, self).__init__()
-        self.input = nn.Linear(input_dim, hidden_dim)
-        self.relu = nn.ReLU()
-        self.output = nn.Linear(hidden_dim, output_dim)
-    
-    def forward(self, x):
-        x = self.input(x)
-        x = self.relu(x)
-        x = self.output(x)
-        return x
-
 # Define the Ai Architecture set when training
 input_dim = 63
 hidden_dim = 32
 output_dim = 3
 
-# Define the model
-model = MLP(input_dim, hidden_dim, output_dim)
-
-# Load the saved model weights into memory
-MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rps_model.pth")
-model.load_state_dict(torch.load(MODEL_PATH, weights_only=True))
-
-WRIST_INDEX = 0 # index of wrist inside of the joints list
-SCALE_JOINT_INDEX = 8 # index of Middle Finger MCP inside of the joints list
+# Calls a function to load the model
+model = load_model(input_dim, hidden_dim, output_dim)
 
 with mp_hands.Hands(
         model_complexity=0,
@@ -84,15 +63,10 @@ with mp_hands.Hands(
             # Loop for drawing onto hand if a hand that needs landmarks is present
             if results.multi_hand_landmarks:
                 for hand_landmarks in results.multi_hand_landmarks:
-                    joint_coordinates = []
-                    
-                    for joint in joints:
-                        x, y, z = finger_locator(joint, hand_landmarks, width, height)
-                        joint_coordinates.append(x)
-                        joint_coordinates.append(y)
-                        joint_coordinates.append(z)
+                    WRIST_INDEX = 0 # index of wrist inside of the joints list
+                    SCALE_JOINT_INDEX = 8 # index of Middle Finger MCP inside of the joints list
 
-                    coords = np.array(joint_coordinates, dtype = np.float32).reshape(-1, 3)
+                    coords = extract_joint_coordinates(hand_landmarks, width, height)
                     
                     wrist = coords[WRIST_INDEX].copy()
                     coords-=wrist
@@ -114,19 +88,14 @@ with mp_hands.Hands(
                     
                     predicted_class = int(torch.argmax(output, dim=1).item())
                     
-                    mp_drawing.draw_landmarks(
-                        frame,  # Draw directly onto frame
-                        hand_landmarks,
-                        mp_hands.HAND_CONNECTIONS,
-                        mp_drawing_styles.get_default_hand_landmarks_style(),
-                        mp_drawing_styles.get_default_hand_connections_style()
-                    )
+                    draw_annotations(frame, hand_landmarks)
             
             # Print predicted class onscreen is hand is present
             if predicted_class is not None:
                 cv2.putText(frame, f"Current hand prediction: {labels[predicted_class]}", org, fontFace, fontScale, color, thickness, lineType)
             else:
                 cv2.putText(frame, "No hand detected", org, fontFace, fontScale, color, thickness, lineType)
+            
             
             # Display the frame AFTER drawing annotations
             cv2.imshow("Webcam Feed", frame)

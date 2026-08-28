@@ -4,10 +4,10 @@ import csv
 import os
 from pathlib import Path
 from dataclasses import fields
-from shared.models import hand, joint
-from shared.fingerNames import joints
-from shared.finger_location import finger_locator
+from shared.Data.models import hand, joint
+from shared.Data.fingerNames import joints
 import numpy as np
+from shared.functions.joint_pos_funcs import finger_locator
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles

@@ -18,8 +18,8 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 # Open the CSV File
 df = pd.read_csv("data.csv")
 from dataclasses import fields
-from shared.models import hand
-from shared.fingerNames import joints
+from shared.Data.models import hand
+from shared.Data.fingerNames import joints # type: ignore
 
 field_names = [f.name for f in fields(hand)]
 print("fields(hand) count:", len(field_names))
