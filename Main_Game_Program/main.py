@@ -1,4 +1,9 @@
-import webcam # Assumes your custom wrapper works perfectly
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from Main_Game_Program import webcam # Assumes your custom wrapper works perfectly
 import cv2
 import mediapipe as mp # type: ignore
 import torch # type: ignore
