@@ -19,6 +19,14 @@ labels = ["Rock", "Paper", "Scissors"]
 # Initializes the webcam and returns camera object
 camera, height, width = webcam.webcam_init()
 
+# Define text properties
+org = (10, 25)           # (x, y) coordinates of the bottom-left corner of the text
+fontFace = cv2.FONT_HERSHEY_SIMPLEX
+fontScale = 1.0           # Font size multiplier
+color = (255, 255, 255)       # Text color in BGR (Green)
+thickness = 2             # Line thickness
+lineType = cv2.LINE_AA    # Anti-aliased line for smoother text rendering
+
 # Define the Ai class
 class MLP(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim):
@@ -51,7 +59,8 @@ SCALE_JOINT_INDEX = 8 # index of Middle Finger MCP inside of the joints list
 with mp_hands.Hands(
         model_complexity=0,
         min_detection_confidence=0.75,
-        min_tracking_confidence=0.85
+        min_tracking_confidence=0.65,
+        max_num_hands = 1
     ) as hands:
         
         while camera.isOpened():
@@ -65,6 +74,9 @@ with mp_hands.Hands(
             frame.flags.writeable = False
             rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = hands.process(rgb_image)
+            
+            # Init the predicted class variable so we can use it anywhere inside the program
+            predicted_class = None
             
             # 2. Allow drawing back on the original frame
             frame.flags.writeable = True
@@ -100,8 +112,7 @@ with mp_hands.Hands(
                     with torch.no_grad():
                         output = model(input_tensor)
                     
-                    predicted_class = torch.argmax(output, dim=1).item()
-                    print(f"Prediction: {labels[predicted_class]} (raw: {output.tolist()})")
+                    predicted_class = int(torch.argmax(output, dim=1).item())
                     
                     mp_drawing.draw_landmarks(
                         frame,  # Draw directly onto frame
@@ -110,6 +121,12 @@ with mp_hands.Hands(
                         mp_drawing_styles.get_default_hand_landmarks_style(),
                         mp_drawing_styles.get_default_hand_connections_style()
                     )
+            
+            # Print predicted class onscreen is hand is present
+            if predicted_class is not None:
+                cv2.putText(frame, f"Current hand prediction: {labels[predicted_class]}", org, fontFace, fontScale, color, thickness, lineType)
+            else:
+                cv2.putText(frame, "No hand detected", org, fontFace, fontScale, color, thickness, lineType)
             
             # Display the frame AFTER drawing annotations
             cv2.imshow("Webcam Feed", frame)
