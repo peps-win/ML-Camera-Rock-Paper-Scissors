@@ -38,6 +38,10 @@ model = load_model(input_dim, hidden_dim, output_dim)
 # Initalizes variables needed to run game start function
 fps = camera.get(cv2.CAP_PROP_FPS)
 game_start_phase = 0
+past_wrist_coords = []
+current_wrist_coords = coordinates(0,0)
+data_for_sec = 2  #seconds that wrist coords are stored for
+min_amplitude = .15  #Wrist must move 15% of the screen for a game to be able to start
 
 with mp_hands.Hands(
         model_complexity=0,
@@ -92,6 +96,9 @@ with mp_hands.Hands(
                     
                     predicted_class = int(torch.argmax(output, dim=1).item())
                     
+                    x, y = finger_locator([WRIST_INDEX], hand_landmarks, width, height)
+                    current_wrist_coords = coordinates(x, y)
+                    
                     draw_annotations(frame, hand_landmarks)
             
             # Print predicted class onscreen is hand is present
@@ -100,8 +107,18 @@ with mp_hands.Hands(
             else:
                 cv2.putText(frame, "No hand detected", org, fontFace, fontScale, color, thickness, lineType)
                 
-            # Checks if game phase is started
+            # Saves the past positions into an list
             
+            past_wrist_coords.append(current_wrist_coords)
+            
+            # If past wrist cords exceeds 2 seconds worth of data then remove last index at
+            if len(past_wrist_coords) < 2/fps:
+                past_wrist_coords.pop()
+            
+            # Check total amplitude
+            y_amplitude = past_wrist_coords[0].y - past_wrist_coords[-1].y
+            if y_amplitude < (min_amplitude*height):
+                
             
             # Display the frame AFTER drawing annotations
             cv2.imshow("Webcam Feed", frame)
