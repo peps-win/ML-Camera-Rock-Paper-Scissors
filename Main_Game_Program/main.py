@@ -11,7 +11,7 @@ import numpy as np
 from shared.Data.fingerNames import joints
 from shared.functions.mediapipe_funcs import draw_annotations
 from shared.functions.RPS_ai_funcs import load_model
-from shared.functions.joint_pos_funcs import extract_joint_coordinates
+from shared.functions.joint_pos_funcs import extract_joint_coordinates, find_game_start_phase, finger_locator
 
 
 mp_drawing = mp.solutions.drawing_utils
@@ -21,14 +21,18 @@ mp_hands = mp.solutions.hands
 # Defines what each tensor means outputted from MLP
 labels = ["Rock", "Paper", "Scissors"]
 
-# Initializes the webcam and returns camera object
+# Initializes the webcam
 camera, height, width = webcam.webcam_init()
+fps = camera.get(cv2.CAP_PROP_FPS)
+
+# Frame capture data for game start
+frame_spacing = fps*.5
 
 # Define text properties
-org = (10, 30)           # (x, y) coordinates of the bottom-left corner of the text
+org = (10, 30)            # (x, y) coordinates of the bottom-left corner of the text
 fontFace = cv2.FONT_HERSHEY_SIMPLEX
 fontScale = 1.0           # Font size multiplier
-color = (255, 255, 255)       # Text color in BGR (Green)
+color = (255, 255, 255)   # Text color in BGR (Green)
 thickness = 2             # Line thickness
 lineType = cv2.LINE_AA    # Anti-aliased line for smoother text rendering
 
@@ -39,6 +43,13 @@ output_dim = 3
 
 # Calls a function to load the model
 model = load_model(input_dim, hidden_dim, output_dim)
+
+# Initalize a frame counter variable used when game is started
+game_start_counter = 0
+
+# Initalizes the variables for past wrist position to find change over time
+past_wrist_x = None
+past_wrist_y = None
 
 with mp_hands.Hands(
         model_complexity=0,
@@ -94,6 +105,8 @@ with mp_hands.Hands(
                     predicted_class = int(torch.argmax(output, dim=1).item())
                     
                     draw_annotations(frame, hand_landmarks)
+                    
+                    wrist_x, wrist_y, _= finger_locator(WRIST_INDEX, hand_landmarks, width, height)
             
             # Print predicted class onscreen is hand is present
             if predicted_class is not None:
@@ -101,6 +114,13 @@ with mp_hands.Hands(
             else:
                 cv2.putText(frame, "No hand detected", org, fontFace, fontScale, color, thickness, lineType)
             
+            
+            game_start_counter+=1
+            if game_start_counter > frame_spacing:
+                find_game_start_phase(wrist_x, wrist_y, past_wrist_x, past_wrist_y, fps, frame_spacing, width, height)
+                past_wrist_x = wrist_x
+                past_wrist_y = wrist_y
+                game_start_counter = 0
             
             # Display the frame AFTER drawing annotations
             cv2.imshow("Webcam Feed", frame)

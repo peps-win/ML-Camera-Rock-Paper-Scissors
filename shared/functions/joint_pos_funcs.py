@@ -27,3 +27,15 @@ def finger_locator (joint, hand_landmarks, width, height):
     z = landmark.z
     
     return x, y, z
+
+def find_game_start_phase (x, y, past_y, past_x, fps, frame_spacing, width, height):
+    # If past x or past y 
+    
+    game_start_phase = 0
+    rate_of_change = ((y/past_y)/frame_spacing)
+    
+    if rate_of_change > 10 and x < :
+        game_start_phase += 1
+    
+    return game_start_phase
+    
