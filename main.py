@@ -7,7 +7,7 @@ from shared.Data.fingerNames import joints
 from shared.functions.mediapipe_funcs import draw_annotations
 from shared.functions.RPS_ai_funcs import load_model
 from shared.functions.joint_pos_funcs import extract_joint_coordinates
-
+from shared.dataclasses import coordinates
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -34,6 +34,10 @@ output_dim = 3
 
 # Calls a function to load the model
 model = load_model(input_dim, hidden_dim, output_dim)
+
+# Initalizes variables needed to run game start function
+fps = camera.get(cv2.CAP_PROP_FPS)
+game_start_phase = 0
 
 with mp_hands.Hands(
         model_complexity=0,
@@ -95,6 +99,8 @@ with mp_hands.Hands(
                 cv2.putText(frame, f"Current hand prediction: {labels[predicted_class]}", org, fontFace, fontScale, color, thickness, lineType)
             else:
                 cv2.putText(frame, "No hand detected", org, fontFace, fontScale, color, thickness, lineType)
+                
+            # Checks if game phase is started
             
             
             # Display the frame AFTER drawing annotations
